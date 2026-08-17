@@ -1,7 +1,5 @@
 from enum import Enum
-
-target_word = "plink"
-target_length = len(target_word)
+import random
 
 
 class Result(Enum):
@@ -70,5 +68,13 @@ def play_game():
                 print(f"{compare(user_word)} (word was \"{target_word}\")")
                 print("You lost!")
 
+
+# Select a random word for the user to guess
+target_words = []
+with open("words/words.txt") as file:
+    target_words = file.readlines()
+target_word_index = random.randrange(0, len(target_words))
+target_word = target_words[target_word_index].rstrip()
+target_length = len(target_word)
 
 play_game()
