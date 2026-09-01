@@ -1,6 +1,11 @@
-from enum import Enum
 import random
 import string
+import tkinter as tk
+
+from enum import Enum
+from guesses import Guesses
+from info import Info
+from keyboard import Keyboard
 
 
 class LetterState(Enum):
@@ -13,30 +18,23 @@ class LetterState(Enum):
 letter_states = {letter: LetterState.NONE for letter in string.ascii_lowercase}
 
 
+def letter_state_colour(state):
+    match state:
+        case LetterState.NONE:
+            return ""
+        case LetterState.INCORRECT_LETTER:
+            return "grey"
+        case LetterState.CORRECT_LETTER_INCORRECT_POSITION:
+            return "yellow"
+        case LetterState.CORRECT_LETTER_CORRECT_POSITION:
+            return "green"
+
+
 def update_letter_state(letter, state):
     # Once a letter is found at the correct position then we don't degrade this
     if letter_states[letter] != LetterState.CORRECT_LETTER_CORRECT_POSITION:
         letter_states[letter] = state
-
-
-def paint_letter(letter, state):
-    # Paint letters using ANSI colour escape sequences
-    match state:
-        case LetterState.NONE:
-            return f"{letter}"
-        case LetterState.INCORRECT_LETTER:
-            # An incorrect letter is grey
-            return f"\033[100m{letter}\033[0m"
-        case LetterState.CORRECT_LETTER_INCORRECT_POSITION:
-            # A correct letter in the incorrect position is yellow
-            return f"\033[43m{letter}\033[0m"
-        case LetterState.CORRECT_LETTER_CORRECT_POSITION:
-            # A correct letter in the correct position is green
-            return f"\033[42m{letter}\033[0m"
-
-
-def paint_all_letters():
-    return " ".join(paint_letter(letter, state) for letter, state in letter_states.items())
+        keyboard.colour_key(letter, letter_state_colour(state))
 
 
 def load_word_list(filename):
@@ -68,38 +66,44 @@ def compare(guess):
             else:
                 guess_states[idx] = LetterState.INCORRECT_LETTER
 
-    # Create the comparison result string with painted letters and update state
-    comparison_string = ""
+    # Create the comparison result colours and update state
+    colours = []
     for (guess_letter, guess_state) in zip(guess, guess_states):
-        comparison_string = comparison_string + \
-            paint_letter(guess_letter, guess_state)
+        colours.append(letter_state_colour(guess_state))
         update_letter_state(guess_letter, guess_state)
 
-    return comparison_string
+    guesses.finish_guess(colours)
 
 
-def play_game():
-    num_guesses = 6
-    while num_guesses > 0:
-        guess = input().lower()
-        if len(guess) != target_length:
-            print(f"Guesses must be {target_length} characters (reenter word)")
-        elif not guess in word_list:
-            print("Guess not in dictionary (reenter word)")
-        elif guess == target:
-            print("You won!")
-            return
-        else:
-            num_guesses = num_guesses - 1
-            if num_guesses > 1:
-                print(
-                    f"{compare(guess)} ({num_guesses} guesses left) - {paint_all_letters()}")
-            elif num_guesses == 1:
-                print(f"{compare(guess)} (1 guess left) - {paint_all_letters()}")
+# The user has pressed a key so update and check their guess
+def on_key_pressed(key):
+    global guess
+    global num_guesses
+    if num_guesses > 0:
+        info.set_text("")
+        if key == "Return":
+            if len(guess) < target_length:
+                info.set_text(f"Guesses must be {target_length} characters")
+            elif not guess in word_list:
+                info.set_text("Guess not in dictionary")
+            elif guess == target:
+                compare(guess)
+                info.set_text("You won!")
+                num_guesses = 0
             else:
-                print(
-                    f"{compare(guess)} (word was \"{target}\") - {paint_all_letters()}")
-                print("You lost!")
+                compare(guess)
+                guess = ""
+                num_guesses = num_guesses - 1
+                if num_guesses == 0:
+                    info.set_text(f"You lost! Word was '{target}'")
+        elif key == "BackSpace":
+            if len(guess) > 0:
+                guess = guess[:-1]
+                guesses.set_guess(guess)
+        else:
+            if len(guess) < target_length:
+                guess += key
+                guesses.set_guess(guess)
 
 
 # Load the full list of possible words
@@ -110,4 +114,17 @@ target_index = random.randrange(0, len(word_list))
 target = word_list[target_index]
 target_length = len(target)
 
-play_game()
+# The user has a number of chances to guess the word
+num_guesses = 6
+guess = ""
+
+# Create the UI
+window = tk.Tk()
+window.title("Anagrams Game")
+window.geometry("300x250")
+
+info = Info(window)
+guesses = Guesses(window, target_length, num_guesses)
+keyboard = Keyboard(window, on_key_pressed)
+
+window.mainloop()
