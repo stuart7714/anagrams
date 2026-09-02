@@ -34,5 +34,6 @@ class Keyboard:
                             button=button: button.invoke())
                 self.buttons[key] = button
 
+    # Change the colour of a key on the keyboard
     def colour_key(self, key, colour):
         self.buttons[key]["bg"] = colour

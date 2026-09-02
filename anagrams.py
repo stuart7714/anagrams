@@ -8,6 +8,7 @@ from info import Info
 from keyboard import Keyboard
 
 
+# Each letter in a user's guess has a state describing how correct it is
 class LetterState(Enum):
     NONE = 1,
     INCORRECT_LETTER = 2,
@@ -15,9 +16,11 @@ class LetterState(Enum):
     CORRECT_LETTER_CORRECT_POSITION = 4
 
 
+# We keep the state for every letter on the keyboard
 letter_states = {letter: LetterState.NONE for letter in string.ascii_lowercase}
 
 
+# Convert a letter state to a colour
 def letter_state_colour(state):
     match state:
         case LetterState.NONE:
@@ -30,6 +33,7 @@ def letter_state_colour(state):
             return "green"
 
 
+# Update the state for a particular letter
 def update_letter_state(letter, state):
     # Once a letter is found at the correct position then we don't degrade this
     if letter_states[letter] != LetterState.CORRECT_LETTER_CORRECT_POSITION:
@@ -37,6 +41,9 @@ def update_letter_state(letter, state):
         keyboard.colour_key(letter, letter_state_colour(state))
 
 
+# Load the full list of words
+# We will select a target word from this word list
+# We will also check the user's guesses against this word list to spell check them
 def load_word_list(filename):
     word_list = []
     with open(filename) as file:

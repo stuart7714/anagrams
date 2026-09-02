@@ -10,5 +10,6 @@ class Info:
         self.label = tk.Label(frame, text="")
         self.label.pack()
 
+    # Set the text we want to show to the user
     def set_text(self, text):
         self.label.config(text=text)
